@@ -17,7 +17,7 @@ object HelloServer {
             helloRouting()
         }.start(wait = true)
 
-    private fun Application.helloRouting() {
+    val helloRouting: Application.() -> Unit = {
         routing {
             route("/hello") {
                 get {

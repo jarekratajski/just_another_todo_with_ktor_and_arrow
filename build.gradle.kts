@@ -18,4 +18,12 @@ dependencies {
     implementation("io.ktor:ktor-server-core:1.5.2")
     implementation("io.ktor:ktor-server-netty:1.5.2")
     implementation("ch.qos.logback:logback-classic:1.2.3")
+
+    testImplementation("io.ktor:ktor-server-test-host:1.5.2")
+    testImplementation ("io.kotest:kotest-runner-junit5-jvm:4.4.3")
+    testImplementation ("io.kotest:kotest-assertions-core-jvm:4.4.3")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
