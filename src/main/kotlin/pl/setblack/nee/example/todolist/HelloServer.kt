@@ -17,7 +17,7 @@ object HelloServer {
             helloRouting()
         }.start(wait = true)
 
-    fun Application.helloRouting() {
+    private fun Application.helloRouting() {
         routing {
             route("/hello") {
                 get {
