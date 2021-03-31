@@ -5,14 +5,18 @@ import io.kotest.matchers.shouldBe
 import io.ktor.http.HttpMethod
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
-class HelloTest : StringSpec({
-    "should do calc" {
+class TodoListTest : StringSpec({
+
+    "add item should give an id" {
+        val constTime = suspend { LocalDateTime.parse("2021-03-14T10:10:10").toInstant(ZoneOffset.UTC)}
         withTestApplication({
-            HelloServer.helloRouting(this)
+            TodoServer(constTime).routing(this)
 
         }) {
-            with(handleRequest(HttpMethod.Get, "/hello")) {
+            with(handleRequest(HttpMethod.Post, "/todo")) {
                 response.content shouldBe ("hello world")
             }
         }
