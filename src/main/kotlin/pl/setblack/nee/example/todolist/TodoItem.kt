@@ -1,14 +1,23 @@
 package pl.setblack.nee.example.todolist
 
+import com.fasterxml.jackson.annotation.JsonCreator
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.time.Instant
 
-inline class TodoId(val id:Int) {
+inline class TodoId(val id: Int) {
     fun next() =
-        TodoId(id+1)
+        TodoId(id + 1)
 }
 
+@JsonTypeInfo(
+    use = JsonTypeInfo.Id.NAME,
+    include = JsonTypeInfo.As.PROPERTY,
+    property = "type")
+@JsonSubTypes(JsonSubTypes.Type(TodoItem.Active::class))
 sealed class TodoItem(val title: String, val created: Instant) {
-    class Active(title: String, created: Instant) : TodoItem(title, created)
+
+    class Active @JsonCreator constructor(title: String, created: Instant) : TodoItem(title, created)
     class Done(todoItem: TodoItem) : TodoItem(todoItem.title, todoItem.created)
     class Cancelled(todoItem: TodoItem) : TodoItem(todoItem.title, todoItem.created)
 }

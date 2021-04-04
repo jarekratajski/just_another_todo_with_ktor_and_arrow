@@ -1,8 +1,9 @@
 package pl.setblack.nee.example.todolist
 
-import arrow.fx.coroutines.Atomic
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.kotlin.KotlinModule
+import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
@@ -19,40 +20,45 @@ import io.ktor.server.netty.Netty
 import io.vavr.jackson.datatype.VavrModule
 import java.time.Instant
 
-typealias IO<A> = suspend ()->A
+typealias IO<A> = suspend () -> A
 
 @Suppress("ReturnUnit")
 class TodoServer(val timeProvider: IO<Instant>) {
 
     fun startServer() =
         embeddedServer(Netty, port = 8000) {
-            install(ContentNegotiation) {
-                jackson {
-                    enable(SerializationFeature.INDENT_OUTPUT)
-                    registerModule(VavrModule())
-                     registerModule(JavaTimeModule())
-                }
-            }
-            routing()
+            definition()
         }.start(wait = true)
 
-
+    val definition: Application.() -> Unit = {
+        install(ContentNegotiation) {
+            jackson {
+                enable(SerializationFeature.INDENT_OUTPUT)
+                registerModule(VavrModule())
+                registerModule(JavaTimeModule())
+                registerModule(KotlinModule())
+                registerModule(ParameterNamesModule())
+            }
+        }
+        routing()
+    }
 
     val routing: Application.() -> Unit = {
 
-        val service =  TodoService(Atomic.unsafe(TodoState()), timeProvider)
+        val service = TodoService(timeProvider)
 
-            routing {
+        routing {
             route("/todo") {
                 get("{id}") {
                     val id = call.parameters["id"]
-                    call.respond("asked $id")
+                    val item = service.findItem(TodoId(id!!.toInt())) // TODO
+                    call.respond(item)
                 }
 
                 post {
-                    call.parameters["title"]?.let { itemTitle->
+                    call.parameters["title"]?.let { itemTitle ->
                         val result = service.addItem(itemTitle)
-                        call.respond("posted ${result.second}")
+                        call.respond(result.second.id.toString())
                     } ?: call.respond(HttpStatusCode.BadRequest, "no title given")
                 }
 

@@ -24,8 +24,9 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.ktor:ktor-jackson:$ktor_version")
     implementation("io.vavr:vavr-jackson:0.10.3")
-    // https://mvnrepository.com/artifact/com.fasterxml.jackson.datatype/jackson-datatype-jsr310
+
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.0")
+    implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.12.0")
 
     //arrow
 //    implementation ("io.arrow-kt:arrow-fx:$arrow_version")
@@ -39,4 +40,12 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+val compileKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
+compileKotlin.kotlinOptions.apply {
+    jvmTarget = "1.8"
+    javaParameters = true
+    allWarningsAsErrors = true
+    freeCompilerArgs = listOf("-XXLanguage:+InlineClasses")
 }
