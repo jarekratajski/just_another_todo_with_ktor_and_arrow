@@ -1,11 +1,16 @@
 package pl.setblack.nee.example.todolist
 
+import arrow.core.Either
+import arrow.core.flatMap
+import arrow.core.left
+import arrow.core.right
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import io.ktor.application.Application
+import io.ktor.application.ApplicationCall
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
@@ -46,15 +51,21 @@ class TodoServer(val timeProvider: IO<Instant>) {
         routing {
             route("/todo") {
                 get("{id}") {
+                    render(call, call.parameters["id"].asId().flatMap { id ->
+                        service.findItem(TodoId(id)).toEither { TodoError.NotFound }
+                    })
+                }
+
+                post("/done") {
                     val id = call.parameters["id"]
-                    val item = service.findItem(TodoId(id!!.toInt())) // TODO
-                    call.respond(item)
+                    val done = service.markDone(TodoId(id!!.toInt())) // TODO toInt
+                    render(call, done)
                 }
 
                 post {
                     call.parameters["title"]?.let { itemTitle ->
                         val result = service.addItem(itemTitle)
-                        call.respond(result.second.id.toString())
+                        call.respond(result.id.toString())
                     } ?: call.respond(HttpStatusCode.BadRequest, "no title given")
                 }
 
@@ -80,3 +91,17 @@ object Json {
         registerModule(ParameterNamesModule())
     }
 }
+
+suspend inline fun <reified A : Any> render(call: ApplicationCall, obj: Either<TodoError, A>) =
+    obj.mapLeft {
+        call.respond(HttpStatusCode.BadRequest, "nok")
+    }.map { a: A ->
+        call.respond(a)
+    }
+
+fun String?.asId(): Either<TodoError, Int> =
+    if (this != null && this.matches(Regex("-?[0-9]+"))) {
+        this.toInt().right()
+    } else {
+        TodoError.InvalidParam.left()
+    }

@@ -17,7 +17,14 @@ inline class TodoId @JsonCreator constructor(val id: Int) {
 @JsonSubTypes(JsonSubTypes.Type(TodoItem.Active::class))
 sealed class TodoItem(val title: String, val created: Instant) {
 
-    class Active @JsonCreator constructor(title: String, created: Instant) : TodoItem(title, created)
-    class Done(todoItem: TodoItem) : TodoItem(todoItem.title, todoItem.created)
+    class Active @JsonCreator constructor(title: String, created: Instant) : TodoItem(title, created) {
+        fun done() = Done(this)
+    }
+
+    class Done(todoItem: TodoItem) : TodoItem(todoItem.title, todoItem.created) {
+        @JsonCreator
+        constructor(title: String, created: Instant) : this(Active(title, created))
+    }
+
     class Cancelled(todoItem: TodoItem) : TodoItem(todoItem.title, todoItem.created)
 }

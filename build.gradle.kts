@@ -7,11 +7,11 @@ plugins {
 repositories {
     mavenCentral()
     jcenter()
-    maven { url= uri("https://dl.bintray.com/arrow-kt/arrow-kt/") }
+    maven { url = uri("https://dl.bintray.com/arrow-kt/arrow-kt/") }
 }
 
-val arrow_version="0.13.0"
-val ktor_version="1.5.2"
+val arrow_version = "0.13.0"
+val ktor_version = "1.5.2"
 
 dependencies {
     implementation("pl.setblack:nee-ctx-web-ktor:0.6.8")
@@ -30,7 +30,7 @@ dependencies {
 
     //arrow
 //    implementation ("io.arrow-kt:arrow-fx:$arrow_version")
-    implementation ("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
+    implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
 //    implementation ("io.arrow-kt:arrow-syntax:$arrow_version")
 
     testImplementation("io.ktor:ktor-server-test-host:1.5.2")
@@ -44,6 +44,14 @@ tasks.withType<Test> {
 
 val compileKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
 compileKotlin.kotlinOptions.apply {
+    jvmTarget = "1.8"
+    javaParameters = true
+    allWarningsAsErrors = true
+    freeCompilerArgs = listOf("-XXLanguage:+InlineClasses")
+}
+
+val compileTestKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
+compileTestKotlin.kotlinOptions.apply {
     jvmTarget = "1.8"
     javaParameters = true
     allWarningsAsErrors = true
