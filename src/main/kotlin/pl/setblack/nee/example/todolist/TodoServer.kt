@@ -1,5 +1,6 @@
 package pl.setblack.nee.example.todolist
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -8,8 +9,9 @@ import io.ktor.application.Application
 import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
-import io.ktor.jackson.jackson
+import io.ktor.jackson.JacksonConverter
 import io.ktor.response.respond
 import io.ktor.routing.get
 import io.ktor.routing.post
@@ -32,13 +34,7 @@ class TodoServer(val timeProvider: IO<Instant>) {
 
     val definition: Application.() -> Unit = {
         install(ContentNegotiation) {
-            jackson {
-                enable(SerializationFeature.INDENT_OUTPUT)
-                registerModule(VavrModule())
-                registerModule(JavaTimeModule())
-                registerModule(KotlinModule())
-                registerModule(ParameterNamesModule())
-            }
+            register(ContentType.Application.Json, JacksonConverter(Json.objectMapper))
         }
         routing()
     }
@@ -73,4 +69,14 @@ class TodoServer(val timeProvider: IO<Instant>) {
 fun main() {
     val time = suspend { Instant.now() }
     TodoServer(time).startServer()
+}
+
+object Json {
+    val objectMapper = ObjectMapper().apply {
+        enable(SerializationFeature.INDENT_OUTPUT)
+        registerModule(VavrModule())
+        registerModule(JavaTimeModule())
+        registerModule(KotlinModule())
+        registerModule(ParameterNamesModule())
+    }
 }

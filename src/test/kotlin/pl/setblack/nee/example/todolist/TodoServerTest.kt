@@ -1,5 +1,6 @@
 package pl.setblack.nee.example.todolist
 
+import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.KotlinModule
@@ -10,6 +11,8 @@ import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
+import io.vavr.Tuple2
+import io.vavr.collection.Seq
 import io.vavr.jackson.datatype.VavrModule
 import java.time.LocalDateTime
 import java.time.ZoneOffset
@@ -26,7 +29,7 @@ class TodoServerTest : StringSpec({
             }
         }
     }
-    "added item should be returned" {
+    "added item should be returned by id" {
         withTestApplication({
             TodoServer(constTime).definition(this)
         }) {
@@ -37,13 +40,20 @@ class TodoServerTest : StringSpec({
             }
         }
     }
+    "added item should be in find all" {
+        withTestApplication({
+            TodoServer(constTime).definition(this)
+        }) {
+            handleRequest(HttpMethod.Post, "/todo?title=hello")
+            with(handleRequest (HttpMethod.Get, "/todo" ) ) {
+                val items = Json.objectMapper.readValue(response.byteContent!!,
+                    object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>(){})
+                items.size() shouldBe 1
+                items[0]._2.title shouldBe ("hello")
+            }
+        }
+    }
 })
 
-object Json  {
-    val objectMapper = ObjectMapper().apply {
-        registerModule(VavrModule())
-        registerModule(JavaTimeModule())
-        registerModule(KotlinModule())
-        registerModule(ParameterNamesModule())
-    }
-}
+data class TodoIdAlt(val id:Int)
+

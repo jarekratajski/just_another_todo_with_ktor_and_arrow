@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
 import java.time.Instant
 
-inline class TodoId(val id: Int) {
+inline class TodoId @JsonCreator constructor(val id: Int) {
     fun next() =
         TodoId(id + 1)
 }

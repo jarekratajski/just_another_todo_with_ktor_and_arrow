@@ -1,7 +1,9 @@
 package pl.setblack.nee.example.todolist
 
 import arrow.fx.coroutines.Atomic
+import io.vavr.Tuple2
 import io.vavr.collection.Map
+import io.vavr.collection.Seq
 import io.vavr.control.Option
 import io.vavr.kotlin.hashMap
 import java.time.Instant
@@ -15,12 +17,13 @@ data class TodoService(
     suspend fun addItem(title: String): Pair<TodoState, TodoId> =
         timeProvider().let { time ->
             state.modifyGet { s ->
+                println("state before ${s.getAll()}")
                 val item = TodoItem.Active(title, time)
                 s.addItem(item)
             }
         }
 
-    suspend fun findAll() = state.get().getAll().map { tuple -> tuple }
+    suspend fun findAll(): Seq<Tuple2<TodoId, TodoItem>> = state.get().getAll().map { tuple -> tuple }
 
     suspend fun findItem(id: TodoId): Option<TodoItem> =
         state.get().getItem(id)
@@ -32,7 +35,7 @@ data class TodoState(
 ) {
     fun addItem(item: TodoItem): Pair<TodoState, TodoId> =
         nextId.let { id ->
-            Pair(this.copy(nextId = id, items = items.put(id, item)), id)
+            Pair(this.copy(nextId = id.next(), items = items.put(id, item)), id)
         }
 
     fun getItem(id: TodoId): Option<TodoItem> = this.items[id]
