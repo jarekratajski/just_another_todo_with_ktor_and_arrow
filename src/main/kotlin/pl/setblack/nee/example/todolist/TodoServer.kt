@@ -94,7 +94,7 @@ object Json {
 
 suspend inline fun <reified A : Any> render(call: ApplicationCall, obj: Either<TodoError, A>) =
     obj.mapLeft {
-        call.respond(HttpStatusCode.BadRequest, "nok")
+        call.respond(it.code, "nok")
     }.map { a: A ->
         call.respond(a)
     }

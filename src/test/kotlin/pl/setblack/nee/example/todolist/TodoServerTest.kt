@@ -6,6 +6,7 @@ import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
 import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
@@ -79,17 +80,15 @@ class TodoServerTest : StringSpec({
             }
         }
     }
+
     "done twice on same item should lead to 409"{
         withTestApplication({
             TodoServer(constTime).definition(this)
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
-            with(handleRequest(HttpMethod.Get, "/todo/${id}")) {
-                val content= response.byteContent!!
-                val item = Json.objectMapper.readValue(content, TodoItem::class.java)
-                item.title shouldBe "hello"
-                item.shouldBeTypeOf<TodoItem.Done>()
+            with(handleRequest(HttpMethod.Post, "/todo/done?id=$id")) {
+               response.status().shouldBe(HttpStatusCode.Conflict)
             }
         }
     }

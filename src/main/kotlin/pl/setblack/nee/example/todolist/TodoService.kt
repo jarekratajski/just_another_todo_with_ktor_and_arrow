@@ -5,6 +5,7 @@ import arrow.core.Option
 import arrow.core.flatMap
 import arrow.core.getOrElse
 import arrow.core.left
+import arrow.core.merge
 import arrow.core.right
 import arrow.core.some
 import arrow.fx.coroutines.Atomic
@@ -58,7 +59,9 @@ data class TodoState(
                 }
             }.map {
                 Pair(this.copy(items = items.put(id, it)), (it as TodoItem).right())
-            }.getOrElse { Pair(this, TodoError.NotFound.left()) }
+            }.mapLeft {
+                Pair(this, it.left())
+            }.merge()
 
     fun getItem(id: TodoId): Option<TodoItem> = this.items[id].kt()
 
