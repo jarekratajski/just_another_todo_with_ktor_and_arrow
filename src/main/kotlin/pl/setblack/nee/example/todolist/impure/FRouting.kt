@@ -16,13 +16,13 @@ data class HttpError(val status: HttpStatusCode, val msg: String = "")
 typealias F<A> = suspend (ApplicationCall) -> Either<HttpError, A>
 
 data class FR(val r: (Route) -> Unit) {
-    fun plus(other: FR) = FR { route ->
+    operator fun plus(other: FR) = FR { route ->
         r(route)
         other.r(route)
     }
 }
 
-suspend inline fun <reified A : Any> aget(path: String, crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
+inline fun <reified A : Any> aget(path: String="", crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
     FR { r: Route ->
         with(r) {
             get(path) {
@@ -31,7 +31,7 @@ suspend inline fun <reified A : Any> aget(path: String, crossinline f: suspend (
         }
     }
 
-suspend inline fun <reified A : Any> apost(path: String, crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
+inline fun <reified A : Any> apost(path: String ="", crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
     FR { r: Route ->
         with(r) {
             post(path) {
@@ -40,7 +40,7 @@ suspend inline fun <reified A : Any> apost(path: String, crossinline f: suspend 
         }
     }
 
-suspend inline fun <reified A : Any> adelete(path: String, crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
+inline fun <reified A : Any> adelete(path: String, crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
     FR { r: Route ->
         with(r) {
             delete(path) {
@@ -49,10 +49,11 @@ suspend inline fun <reified A : Any> adelete(path: String, crossinline f: suspen
         }
     }
 
-suspend inline fun nested(path: String, nestedRoutes: FR) = FR { r ->
+inline fun nested(path: String, crossinline nestedRoutes: () -> FR) = FR { r ->
     with(r) {
         route(path) {
-            nestedRoutes.r(r)
+            println(this)
+            nestedRoutes().r(this)
         }
     }
 }

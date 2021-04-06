@@ -21,11 +21,14 @@ import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import pl.setblack.nee.example.todolist.impure.JsonMapper
+import pl.setblack.nee.example.todolist.impure.adelete
+import pl.setblack.nee.example.todolist.impure.aget
+import pl.setblack.nee.example.todolist.impure.apost
+import pl.setblack.nee.example.todolist.impure.nested
 import java.time.Instant
 
 typealias IO<A> = suspend () -> A
 
-@Suppress("ReturnUnit")
 class TodoServer(val timeProvider: IO<Instant>) {
 
     fun startServer() =
@@ -45,22 +48,29 @@ class TodoServer(val timeProvider: IO<Instant>) {
         val service = TodoService(timeProvider)
 
         routing {
-            route("/todo") {
-                get("{id}") {
-                    render(call, call.parameters["id"].asId().flatMap { id ->
+            nested("/todo") {
+                aget("{id}") {
+                    it.parameters["id"].asId().flatMap { id ->
                         service.findItem(TodoId(id)).toEither { TodoError.NotFound }
-                    })
-                }
-                delete("{id}") {
-                    render(call, call.parameters["id"].asId().flatMap { id ->
+                    }.mapLeft { it.toHttpError() }
+                } + adelete("{id}") {
+                    it.parameters["id"].asId().flatMap { id ->
                         service.cancellItem(TodoId(id))
-                    })
+                    }.mapLeft { it.toHttpError() }
+                } + nested("/done") {
+                    aget {
+                        service.findDone().right()
+                    } + apost {
+                        it.parameters["id"].asId().flatMap { id ->
+                            service.markDone(TodoId(id))
+                        }.mapLeft { it.toHttpError() }
+                    }
                 }
+            }.r(this)
+            route("/otodo") {
 
                 route("/done") {
-                    get {
-                        call.respond(service.findDone())
-                    }
+
                     post {
                         render(call,
                             call.parameters["id"].asId().flatMap { id ->
