@@ -1,3 +1,5 @@
+@file:Suppress("ReturnUnit")
+
 package pl.setblack.nee.example.todolist.impure
 
 import arrow.core.Either
@@ -22,7 +24,10 @@ data class FR(val r: (Route) -> Unit) {
     }
 }
 
-inline fun <reified A : Any> aget(path: String="", crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
+inline fun <reified A : Any> aget(
+    path: String = "",
+    crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>
+) =
     FR { r: Route ->
         with(r) {
             get(path) {
@@ -31,7 +36,10 @@ inline fun <reified A : Any> aget(path: String="", crossinline f: suspend (Appli
         }
     }
 
-inline fun <reified A : Any> apost(path: String ="", crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
+inline fun <reified A : Any> apost(
+    path: String = "",
+    crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>
+) =
     FR { r: Route ->
         with(r) {
             post(path) {
@@ -40,7 +48,10 @@ inline fun <reified A : Any> apost(path: String ="", crossinline f: suspend (App
         }
     }
 
-inline fun <reified A : Any> adelete(path: String, crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>) =
+inline fun <reified A : Any> adelete(
+    path: String,
+    crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>
+) =
     FR { r: Route ->
         with(r) {
             delete(path) {

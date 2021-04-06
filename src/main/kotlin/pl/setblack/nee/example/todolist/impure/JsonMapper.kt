@@ -8,11 +8,10 @@ import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import io.vavr.jackson.datatype.VavrModule
 
 object JsonMapper {
-    val objectMapper = ObjectMapper().apply {
-        enable(SerializationFeature.INDENT_OUTPUT)
-        registerModule(VavrModule())
-        registerModule(JavaTimeModule())
-        registerModule(KotlinModule())
-        registerModule(ParameterNamesModule())
-    }
+    val objectMapper = ObjectMapper()
+        .enable(SerializationFeature.INDENT_OUTPUT)
+        .registerModule(VavrModule())
+        .registerModule(JavaTimeModule())
+        .registerModule(KotlinModule())
+        .registerModule(ParameterNamesModule())
 }

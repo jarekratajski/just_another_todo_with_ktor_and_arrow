@@ -5,21 +5,15 @@ import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
 import io.ktor.application.Application
-import io.ktor.application.ApplicationCall
-import io.ktor.application.call
 import io.ktor.application.install
 import io.ktor.features.ContentNegotiation
 import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.JacksonConverter
-import io.ktor.response.respond
-import io.ktor.routing.delete
-import io.ktor.routing.get
-import io.ktor.routing.post
-import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
+import pl.setblack.nee.example.todolist.impure.HttpError
 import pl.setblack.nee.example.todolist.impure.JsonMapper
 import pl.setblack.nee.example.todolist.impure.adelete
 import pl.setblack.nee.example.todolist.impure.aget
@@ -65,38 +59,19 @@ class TodoServer(val timeProvider: IO<Instant>) {
                             service.markDone(TodoId(id))
                         }.mapLeft { it.toHttpError() }
                     }
+                } + nested("/cancelled") {
+                    aget {
+                        service.findCancelled().right()
+                    }
+                } + apost {
+                    it.parameters["title"]?.let { itemTitle ->
+                        val result = service.addItem(itemTitle)
+                        result.id.toString().right()
+                    } ?: HttpError(HttpStatusCode.BadRequest, "no title given").left()
+                } + aget {
+                    service.findActive().right()
                 }
             }.r(this)
-            route("/otodo") {
-
-                route("/done") {
-
-                    post {
-                        render(call,
-                            call.parameters["id"].asId().flatMap { id ->
-                                service.markDone(TodoId(id))
-                            }
-                        )
-                    }
-                }
-
-                route("/cancelled") {
-                    get {
-                        call.respond(service.findCancelled())
-                    }
-                }
-
-                post {
-                    call.parameters["title"]?.let { itemTitle ->
-                        val result = service.addItem(itemTitle)
-                        call.respond(result.id.toString())
-                    } ?: call.respond(HttpStatusCode.BadRequest, "no title given")
-                }
-
-                get {
-                    call.respond(service.findActive())
-                }
-            }
         }
     }
 }
@@ -105,13 +80,6 @@ fun main() {
     val time = suspend { Instant.now() }
     TodoServer(time).startServer()
 }
-
-suspend inline fun <reified A : Any> render(call: ApplicationCall, obj: Either<TodoError, A>) =
-    obj.mapLeft {
-        call.respond(it.code, "nok")
-    }.map { a: A ->
-        call.respond(a)
-    }
 
 fun String?.asId(): Either<TodoError, Int> =
     if (this != null && this.matches(Regex("-?[0-9]+"))) {
