@@ -3,7 +3,6 @@ package pl.setblack.nee.example.todolist
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.flatMap
-import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.merge
 import arrow.core.right
@@ -35,10 +34,27 @@ data class TodoService(
             s.markDone(id)
         }.second
 
-    suspend fun findAll(): Seq<Tuple2<TodoId, TodoItem>> = state.get().getAll().map { tuple -> tuple }
+    suspend fun findActive(): Seq<Tuple2<TodoId, TodoItem>> = state.get().getAll()
+        .filter { tuple ->
+            tuple._2.isActive()
+        }.map { tuple -> tuple }
 
     suspend fun findItem(id: TodoId): Option<TodoItem> =
         state.get().getItem(id)
+
+    suspend fun cancellItem(id: TodoId) = state.modifyGet { s ->
+        s.markCancelled(id)
+    }.second
+
+    suspend fun findCancelled() = state.get().getAll()
+        .filter { tuple ->
+            tuple._2 is TodoItem.Cancelled
+        }.map { tuple -> tuple }
+
+    suspend fun findDone() = state.get().getAll()
+        .filter { tuple ->
+            tuple._2 is TodoItem.Done
+        }.map { tuple -> tuple }
 }
 
 data class TodoState(
@@ -50,22 +66,34 @@ data class TodoState(
             Pair(this.copy(nextId = id.next(), items = items.put(id, item)), id)
         }
 
-    fun markDone(id: TodoId): Pair<TodoState, Either<TodoError, TodoItem>> =
-        items[id].kt().toEither { TodoError.NotFound }
-            .flatMap {
-                when (it) {
-                    is TodoItem.Active -> it.done().right()
-                    else -> TodoError.InvalidState.left()
-                }
-            }.map {
-                Pair(this.copy(items = items.put(id, it)), (it as TodoItem).right())
-            }.mapLeft {
-                Pair(this, it.left())
-            }.merge()
+    fun markDone(id: TodoId): Pair<TodoState, Either<TodoError, TodoItem>> = changeItem(id) { item ->
+        when (item) {
+            is TodoItem.Active -> item.done().right()
+            else -> TodoError.InvalidState.left()
+        }
+    }
+
+    fun markCancelled(id: TodoId): Pair<TodoState, Either<TodoError, TodoItem>> = changeItem(id) { item ->
+        when (item) {
+            is TodoItem.Active -> item.cancel().right()
+            else -> TodoError.InvalidState.left()
+        }
+    }
 
     fun getItem(id: TodoId): Option<TodoItem> = this.items[id].kt()
 
     fun getAll() = this.items
+
+    private fun changeItem(id: TodoId, change: (TodoItem) -> Either<TodoError, TodoItem>):
+            Pair<TodoState, Either<TodoError, TodoItem>> =
+        items[id].kt().toEither { TodoError.NotFound }
+            .flatMap {
+                change(it)
+            }.map {
+                Pair(this.copy(items = items.put(id, it)), it.right())
+            }.mapLeft {
+                Pair(this, it.left())
+            }.merge()
 }
 
 sealed class TodoError(val code: HttpStatusCode) {

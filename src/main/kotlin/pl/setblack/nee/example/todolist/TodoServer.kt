@@ -18,6 +18,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
 import io.ktor.jackson.JacksonConverter
 import io.ktor.response.respond
+import io.ktor.routing.delete
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.route
@@ -55,11 +56,27 @@ class TodoServer(val timeProvider: IO<Instant>) {
                         service.findItem(TodoId(id)).toEither { TodoError.NotFound }
                     })
                 }
+                delete("{id}") {
+                    render(call, call.parameters["id"].asId().flatMap { id ->
+                        service.cancellItem(TodoId(id))
+                    })
+                }
 
-                post("/done") {
-                    val id = call.parameters["id"]
-                    val done = service.markDone(TodoId(id!!.toInt())) // TODO toInt
-                    render(call, done)
+                route("/done") {
+                    get {
+                        call.respond(service.findDone())
+                    }
+                    post {
+                        val id = call.parameters["id"]
+                        val done = service.markDone(TodoId(id!!.toInt())) // TODO toInt
+                        render(call, done)
+                    }
+                }
+
+                route("/cancelled") {
+                    get {
+                        call.respond(service.findCancelled())
+                    }
                 }
 
                 post {
@@ -70,7 +87,7 @@ class TodoServer(val timeProvider: IO<Instant>) {
                 }
 
                 get {
-                    call.respond(service.findAll())
+                    call.respond(service.findActive())
                 }
             }
         }

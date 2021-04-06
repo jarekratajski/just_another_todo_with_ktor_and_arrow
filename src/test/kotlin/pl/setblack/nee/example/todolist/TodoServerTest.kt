@@ -38,6 +38,16 @@ class TodoServerTest : StringSpec({
             }
         }
     }
+    "calling get with text id returns error" {
+        withTestApplication({
+            TodoServer(constTime).definition(this)
+        }) {
+            addItemUsingPOST("hello")
+            with(handleRequest(HttpMethod.Get, "/todo/zupka")) {
+                response.status() shouldBe HttpStatusCode.BadRequest
+            }
+        }
+    }
     "added item should be in find all" {
         withTestApplication({
             TodoServer(constTime).definition(this)
@@ -89,6 +99,59 @@ class TodoServerTest : StringSpec({
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
             with(handleRequest(HttpMethod.Post, "/todo/done?id=$id")) {
                response.status().shouldBe(HttpStatusCode.Conflict)
+            }
+        }
+    }
+    "done should not be on todo list" {
+        withTestApplication({
+            TodoServer(constTime).definition(this)
+        }) {
+            val id = addItemUsingPOST("hello")
+            handleRequest(HttpMethod.Post, "/todo/done?id=$id")
+            with(handleRequest(HttpMethod.Get, "/todo")) {
+                val items = Json.objectMapper.readValue(response.byteContent!!,
+                    object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
+                items.size() shouldBe 0
+            }
+        }
+    }
+    "done should  be on done list" {
+        withTestApplication({
+            TodoServer(constTime).definition(this)
+        }) {
+            val id = addItemUsingPOST("hello")
+            handleRequest(HttpMethod.Post, "/todo/done?id=$id")
+            with(handleRequest(HttpMethod.Get, "/todo/done")) {
+                val items = Json.objectMapper.readValue(response.byteContent!!,
+                    object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
+                items.size() shouldBe 1
+            }
+        }
+    }
+
+    "cancelled should not be on todo list" {
+        withTestApplication({
+            TodoServer(constTime).definition(this)
+        }) {
+            val id = addItemUsingPOST("hello")
+            handleRequest(HttpMethod.Delete, "/todo/$id")
+            with(handleRequest(HttpMethod.Get, "/todo")) {
+                val items = Json.objectMapper.readValue(response.byteContent!!,
+                    object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
+                items.size() shouldBe 0
+            }
+        }
+    }
+    "cancelled should be on cancelled list" {
+        withTestApplication({
+            TodoServer(constTime).definition(this)
+        }) {
+            val id = addItemUsingPOST("hello")
+            handleRequest(HttpMethod.Delete, "/todo/$id")
+            with(handleRequest(HttpMethod.Get, "/todo/cancelled")) {
+                val items = Json.objectMapper.readValue(response.byteContent!!,
+                    object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
+                items.size() shouldBe 1
             }
         }
     }
