@@ -42,6 +42,10 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    this.jvmTarget = "1.8"
+}
+
 val compileKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
 compileKotlin.kotlinOptions.apply {
     jvmTarget = "1.8"

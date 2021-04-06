@@ -12,6 +12,7 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import io.vavr.Tuple2
 import io.vavr.collection.Seq
+import pl.setblack.nee.example.todolist.impure.JsonMapper
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 
@@ -33,7 +34,7 @@ class TodoServerTest : StringSpec({
         }) {
             addItemUsingPOST("hello")
             with(handleRequest(HttpMethod.Get, "/todo/1")) {
-                val item = Json.objectMapper.readValue(response.byteContent!!, TodoItem::class.java)
+                val item = JsonMapper.objectMapper.readValue(response.byteContent!!, TodoItem::class.java)
                 item.title shouldBe "hello"
             }
         }
@@ -54,7 +55,7 @@ class TodoServerTest : StringSpec({
         }) {
             addItemUsingPOST("hello")
             with(handleRequest(HttpMethod.Get, "/todo")) {
-                val items = Json.objectMapper.readValue(response.byteContent!!,
+                val items = JsonMapper.objectMapper.readValue(response.byteContent!!,
                     object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
                 items.size() shouldBe 1
                 items[0]._2.title shouldBe ("hello")
@@ -69,7 +70,7 @@ class TodoServerTest : StringSpec({
                 addItemUsingPOST("hello_$it")
             }
             with(handleRequest(HttpMethod.Get, "/todo")) {
-                val items = Json.objectMapper.readValue(response.byteContent!!,
+                val items = JsonMapper.objectMapper.readValue(response.byteContent!!,
                     object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
                 items.size() shouldBe 3
                 items.map { it._2.title } shouldContainAll ((0 until 3).map { "hello_$it" })
@@ -84,7 +85,7 @@ class TodoServerTest : StringSpec({
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
             with(handleRequest(HttpMethod.Get, "/todo/${id}")) {
                 val content= response.byteContent!!
-                val item = Json.objectMapper.readValue(content, TodoItem::class.java)
+                val item = JsonMapper.objectMapper.readValue(content, TodoItem::class.java)
                 item.title shouldBe "hello"
                 item.shouldBeTypeOf<TodoItem.Done>()
             }
@@ -109,7 +110,7 @@ class TodoServerTest : StringSpec({
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
             with(handleRequest(HttpMethod.Get, "/todo")) {
-                val items = Json.objectMapper.readValue(response.byteContent!!,
+                val items = JsonMapper.objectMapper.readValue(response.byteContent!!,
                     object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
                 items.size() shouldBe 0
             }
@@ -122,7 +123,7 @@ class TodoServerTest : StringSpec({
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
             with(handleRequest(HttpMethod.Get, "/todo/done")) {
-                val items = Json.objectMapper.readValue(response.byteContent!!,
+                val items = JsonMapper.objectMapper.readValue(response.byteContent!!,
                     object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
                 items.size() shouldBe 1
             }
@@ -136,7 +137,7 @@ class TodoServerTest : StringSpec({
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Delete, "/todo/$id")
             with(handleRequest(HttpMethod.Get, "/todo")) {
-                val items = Json.objectMapper.readValue(response.byteContent!!,
+                val items = JsonMapper.objectMapper.readValue(response.byteContent!!,
                     object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
                 items.size() shouldBe 0
             }
@@ -149,7 +150,7 @@ class TodoServerTest : StringSpec({
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Delete, "/todo/$id")
             with(handleRequest(HttpMethod.Get, "/todo/cancelled")) {
-                val items = Json.objectMapper.readValue(response.byteContent!!,
+                val items = JsonMapper.objectMapper.readValue(response.byteContent!!,
                     object : TypeReference<Seq<Tuple2<TodoIdAlt, TodoItem>>>() {})
                 items.size() shouldBe 1
             }

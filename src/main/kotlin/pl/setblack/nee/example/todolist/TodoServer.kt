@@ -4,11 +4,6 @@ import arrow.core.Either
 import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import io.ktor.application.Application
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
@@ -25,7 +20,7 @@ import io.ktor.routing.route
 import io.ktor.routing.routing
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
-import io.vavr.jackson.datatype.VavrModule
+import pl.setblack.nee.example.todolist.impure.JsonMapper
 import java.time.Instant
 
 typealias IO<A> = suspend () -> A
@@ -40,7 +35,7 @@ class TodoServer(val timeProvider: IO<Instant>) {
 
     val definition: Application.() -> Unit = {
         install(ContentNegotiation) {
-            register(ContentType.Application.Json, JacksonConverter(Json.objectMapper))
+            register(ContentType.Application.Json, JacksonConverter(JsonMapper.objectMapper))
         }
         routing()
     }
@@ -67,9 +62,11 @@ class TodoServer(val timeProvider: IO<Instant>) {
                         call.respond(service.findDone())
                     }
                     post {
-                        val id = call.parameters["id"]
-                        val done = service.markDone(TodoId(id!!.toInt())) // TODO toInt
-                        render(call, done)
+                        render(call,
+                            call.parameters["id"].asId().flatMap { id ->
+                                service.markDone(TodoId(id))
+                            }
+                        )
                     }
                 }
 
@@ -97,16 +94,6 @@ class TodoServer(val timeProvider: IO<Instant>) {
 fun main() {
     val time = suspend { Instant.now() }
     TodoServer(time).startServer()
-}
-
-object Json {
-    val objectMapper = ObjectMapper().apply {
-        enable(SerializationFeature.INDENT_OUTPUT)
-        registerModule(VavrModule())
-        registerModule(JavaTimeModule())
-        registerModule(KotlinModule())
-        registerModule(ParameterNamesModule())
-    }
 }
 
 suspend inline fun <reified A : Any> render(call: ApplicationCall, obj: Either<TodoError, A>) =

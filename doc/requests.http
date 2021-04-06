@@ -13,3 +13,7 @@ POST localhost:8000/todo?title=aa
 
 POST localhost:8000/todo/done?id=1
 
+
+###
+GET localhost:8000/todo/done
+
