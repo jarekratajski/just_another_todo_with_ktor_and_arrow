@@ -5,8 +5,13 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.collections.shouldContainAll
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.types.shouldBeTypeOf
+import io.ktor.application.Application
+import io.ktor.application.install
+import io.ktor.features.ContentNegotiation
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.jackson.JacksonConverter
+import io.ktor.routing.routing
 import io.ktor.server.testing.TestApplicationEngine
 import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
@@ -17,11 +22,10 @@ import java.time.LocalDateTime
 import java.time.ZoneOffset
 
 class TodoServerTest : StringSpec({
-    val constTime = suspend { LocalDateTime.parse("2021-03-14T10:10:10").toInstant(ZoneOffset.UTC) }
 
     "add item should give an id" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             with(handleRequest(HttpMethod.Post, "/todo?title=hello")) {
                 response.content shouldBe ("1")
@@ -30,7 +34,7 @@ class TodoServerTest : StringSpec({
     }
     "added item should be returned by id" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             addItemUsingPOST("hello")
             with(handleRequest(HttpMethod.Get, "/todo/1")) {
@@ -41,7 +45,7 @@ class TodoServerTest : StringSpec({
     }
     "calling get with text id returns error" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             addItemUsingPOST("hello")
             with(handleRequest(HttpMethod.Get, "/todo/zupka")) {
@@ -51,7 +55,7 @@ class TodoServerTest : StringSpec({
     }
     "added item should be in find all" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             addItemUsingPOST("hello")
             with(handleRequest(HttpMethod.Get, "/todo")) {
@@ -64,7 +68,7 @@ class TodoServerTest : StringSpec({
     }
     "added three  items should be in find all" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             (0 until 3).forEach {
                 addItemUsingPOST("hello_$it")
@@ -79,12 +83,12 @@ class TodoServerTest : StringSpec({
     }
     "done should mark as done"{
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
             with(handleRequest(HttpMethod.Get, "/todo/${id}")) {
-                val content= response.byteContent!!
+                val content = response.byteContent!!
                 val item = JsonMapper.objectMapper.readValue(content, TodoItem::class.java)
                 item.title shouldBe "hello"
                 item.shouldBeTypeOf<TodoItem.Done>()
@@ -94,18 +98,18 @@ class TodoServerTest : StringSpec({
 
     "done twice on same item should lead to 409"{
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
             with(handleRequest(HttpMethod.Post, "/todo/done?id=$id")) {
-               response.status().shouldBe(HttpStatusCode.Conflict)
+                response.status().shouldBe(HttpStatusCode.Conflict)
             }
         }
     }
     "done should not be on todo list" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
@@ -118,7 +122,7 @@ class TodoServerTest : StringSpec({
     }
     "done should  be on done list" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Post, "/todo/done?id=$id")
@@ -132,7 +136,7 @@ class TodoServerTest : StringSpec({
 
     "cancelled should not be on todo list" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Delete, "/todo/$id")
@@ -145,7 +149,7 @@ class TodoServerTest : StringSpec({
     }
     "cancelled should be on cancelled list" {
         withTestApplication({
-            TodoServer(constTime).definition(this)
+            todoRest()
         }) {
             val id = addItemUsingPOST("hello")
             handleRequest(HttpMethod.Delete, "/todo/$id")
@@ -156,7 +160,20 @@ class TodoServerTest : StringSpec({
             }
         }
     }
-})
+}) {
+    companion object {
+        val constTime = suspend { LocalDateTime.parse("2021-03-14T10:10:10").toInstant(ZoneOffset.UTC) }
+
+        val todoRest: Application.() -> Unit = {
+            install(ContentNegotiation) {
+                register(io.ktor.http.ContentType.Application.Json, JacksonConverter(JsonMapper.objectMapper))
+            }
+            routing {
+                TodoServer.defineRouting(constTime).r(this)
+            }
+        }
+    }
+}
 
 private fun TestApplicationEngine.addItemUsingPOST(title: String): Int =
     with(handleRequest(HttpMethod.Post, "/todo?title=$title")) {
@@ -164,4 +181,3 @@ private fun TestApplicationEngine.addItemUsingPOST(title: String): Int =
     }
 
 data class TodoIdAlt(val id: Int)
-

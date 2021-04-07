@@ -3,22 +3,45 @@
 package pl.setblack.nee.example.todolist.impure
 
 import arrow.core.Either
+import com.fasterxml.jackson.databind.ObjectMapper
 import io.ktor.application.ApplicationCall
 import io.ktor.application.call
+import io.ktor.application.install
+import io.ktor.features.ContentNegotiation
+import io.ktor.http.ContentType
 import io.ktor.http.HttpStatusCode
+import io.ktor.jackson.JacksonConverter
 import io.ktor.response.respond
 import io.ktor.routing.Route
 import io.ktor.routing.delete
 import io.ktor.routing.get
 import io.ktor.routing.post
 import io.ktor.routing.route
+import io.ktor.routing.routing
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import pl.setblack.nee.example.todolist.IO
 
 data class HttpError(val status: HttpStatusCode, val msg: String = "")
 
-typealias F<A> = suspend (ApplicationCall) -> Either<HttpError, A>
+fun startNettyServer(
+    port: Int,
+    mapper: ObjectMapper,
+    aRouting: RoutingDef
+): IO<Unit> =
+    suspend {
+        embeddedServer(Netty, port = port) {
+            install(ContentNegotiation) {
+                register(ContentType.Application.Json, JacksonConverter(mapper))
+            }
+            routing {
+                aRouting.r(this)
+            }
+        }.start(wait = true)
+    }
 
-data class FR(val r: (Route) -> Unit) {
-    operator fun plus(other: FR) = FR { route ->
+data class RoutingDef(val r: (Route) -> Unit) {
+    operator fun plus(other: RoutingDef) = RoutingDef { route ->
         r(route)
         other.r(route)
     }
@@ -28,7 +51,7 @@ inline fun <reified A : Any> aget(
     path: String = "",
     crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>
 ) =
-    FR { r: Route ->
+    RoutingDef { r: Route ->
         with(r) {
             get(path) {
                 render(call, f(call))
@@ -40,7 +63,7 @@ inline fun <reified A : Any> apost(
     path: String = "",
     crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>
 ) =
-    FR { r: Route ->
+    RoutingDef { r: Route ->
         with(r) {
             post(path) {
                 render(call, f(call))
@@ -52,7 +75,7 @@ inline fun <reified A : Any> adelete(
     path: String,
     crossinline f: suspend (ApplicationCall) -> Either<HttpError, A>
 ) =
-    FR { r: Route ->
+    RoutingDef { r: Route ->
         with(r) {
             delete(path) {
                 render(call, f(call))
@@ -60,7 +83,7 @@ inline fun <reified A : Any> adelete(
         }
     }
 
-inline fun nested(path: String, crossinline nestedRoutes: () -> FR) = FR { r ->
+inline fun nested(path: String, crossinline nestedRoutes: () -> RoutingDef) = RoutingDef { r ->
     with(r) {
         route(path) {
             println(this)
