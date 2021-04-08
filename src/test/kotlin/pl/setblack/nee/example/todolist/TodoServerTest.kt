@@ -17,7 +17,7 @@ import io.ktor.server.testing.handleRequest
 import io.ktor.server.testing.withTestApplication
 import io.vavr.Tuple2
 import io.vavr.collection.Seq
-import pl.setblack.nee.example.todolist.impure.JsonMapper
+import pl.setblack.nee.example.todolist.framework.JsonMapper
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 

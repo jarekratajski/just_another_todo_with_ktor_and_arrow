@@ -1,7 +1,7 @@
 package pl.setblack.nee.example.todolist
 
 import io.ktor.http.HttpStatusCode
-import pl.setblack.nee.example.todolist.impure.HttpError
+import pl.setblack.nee.example.todolist.framework.HttpError
 
 sealed class TodoError(val code: HttpStatusCode) {
     fun toHttpError() = HttpError(this.code, this.toString())

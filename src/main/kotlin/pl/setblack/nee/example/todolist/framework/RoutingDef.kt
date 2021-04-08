@@ -1,6 +1,6 @@
 @file:Suppress("ReturnUnit")
 
-package pl.setblack.nee.example.todolist.impure
+package pl.setblack.nee.example.todolist.framework
 
 import arrow.core.Either
 import com.fasterxml.jackson.databind.ObjectMapper

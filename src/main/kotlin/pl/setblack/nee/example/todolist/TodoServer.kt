@@ -5,13 +5,13 @@ import arrow.core.flatMap
 import arrow.core.left
 import arrow.core.right
 import io.ktor.http.HttpStatusCode
-import pl.setblack.nee.example.todolist.impure.HttpError
-import pl.setblack.nee.example.todolist.impure.JsonMapper
-import pl.setblack.nee.example.todolist.impure.adelete
-import pl.setblack.nee.example.todolist.impure.aget
-import pl.setblack.nee.example.todolist.impure.apost
-import pl.setblack.nee.example.todolist.impure.nested
-import pl.setblack.nee.example.todolist.impure.startNettyServer
+import pl.setblack.nee.example.todolist.framework.HttpError
+import pl.setblack.nee.example.todolist.framework.JsonMapper
+import pl.setblack.nee.example.todolist.framework.adelete
+import pl.setblack.nee.example.todolist.framework.aget
+import pl.setblack.nee.example.todolist.framework.apost
+import pl.setblack.nee.example.todolist.framework.nested
+import pl.setblack.nee.example.todolist.framework.startNettyServer
 import java.time.Instant
 
 typealias IO<A> = suspend () -> A

@@ -1,4 +1,4 @@
-package pl.setblack.nee.example.todolist.impure
+package pl.setblack.nee.example.todolist.framework
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature

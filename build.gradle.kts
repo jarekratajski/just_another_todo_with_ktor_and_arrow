@@ -42,9 +42,6 @@ tasks.withType<Test> {
     useJUnitPlatform()
 }
 
-tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
-    this.jvmTarget = "1.8"
-}
 
 val compileKotlin: org.jetbrains.kotlin.gradle.tasks.KotlinCompile by tasks
 compileKotlin.kotlinOptions.apply {
@@ -60,4 +57,9 @@ compileTestKotlin.kotlinOptions.apply {
     javaParameters = true
     allWarningsAsErrors = true
     freeCompilerArgs = listOf("-XXLanguage:+InlineClasses")
+}
+
+tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
+    this.jvmTarget = "1.8"
+    this.classpath.setFrom(compileKotlin.classpath.asPath)
 }
