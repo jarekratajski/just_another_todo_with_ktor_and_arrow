@@ -40,6 +40,9 @@ fun startNettyServer(
         }.start(wait = true)
     }
 
+/**
+ * RoutingDef encapsulates impure dsl of ktor
+ */
 data class RoutingDef(val r: (Route) -> Unit) {
     operator fun plus(other: RoutingDef) = RoutingDef { route ->
         r(route)

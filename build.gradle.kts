@@ -3,7 +3,6 @@ plugins {
     id("io.gitlab.arturbosch.detekt").version("1.16.0")
 }
 
-
 repositories {
     mavenCentral()
     jcenter()
@@ -14,8 +13,8 @@ val arrow_version = "0.13.0"
 val ktor_version = "1.5.2"
 
 dependencies {
-    implementation("pl.setblack:nee-ctx-web-ktor:0.6.8")
-    detektPlugins("pl.setblack:kure-potlin:0.4.0")
+    //purity
+    detektPlugins("pl.setblack:kure-potlin:0.5.0")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:1.16.0")
 
     //ktor server
@@ -23,15 +22,17 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:$ktor_version")
     implementation("ch.qos.logback:logback-classic:1.2.3")
     implementation("io.ktor:ktor-jackson:$ktor_version")
+
+    //vavr
     implementation("io.vavr:vavr-jackson:0.10.3")
+    implementation("io.vavr:vavr-kotlin:0.10.2")
 
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.12.0")
     implementation("com.fasterxml.jackson.module:jackson-module-parameter-names:2.12.0")
 
     //arrow
-//    implementation ("io.arrow-kt:arrow-fx:$arrow_version")
     implementation("io.arrow-kt:arrow-fx-coroutines:$arrow_version")
-//    implementation ("io.arrow-kt:arrow-syntax:$arrow_version")
+
 
     testImplementation("io.ktor:ktor-server-test-host:1.5.2")
     testImplementation("io.kotest:kotest-runner-junit5-jvm:4.4.3")
@@ -62,4 +63,11 @@ compileTestKotlin.kotlinOptions.apply {
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
     this.jvmTarget = "1.8"
     this.classpath.setFrom(compileKotlin.classpath.asPath)
+}
+
+//use detekt with type resulution (very strict checks)
+tasks {
+    "build" {
+        dependsOn("detektMain")
+    }
 }
